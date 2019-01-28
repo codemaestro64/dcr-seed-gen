@@ -2,20 +2,18 @@ package main
 
 import (
 	"github.com/aarzilli/nucular"
-	"github.com/aarzilli/nucular/style"
 )
 
 const (
-	scaling = 1.9
+	scaling = 1.3
 )
 
 func main() {
 	handler := Newhandler()
 
 	window := nucular.NewMasterWindow(0, "DCR SEED", handler.Render)
-	window.SetStyle(style.FromTheme(style.DefaultTheme, scaling))
+	setStyle(window)
 
 	handler.SetMasterWindow(window)
-
 	window.Main()
 }
