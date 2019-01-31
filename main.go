@@ -1,8 +1,9 @@
 package main
 
 import (
+	"log"
+
 	"github.com/aarzilli/nucular"
-	"github.com/aarzilli/nucular/style"
 )
 
 type App struct {
@@ -25,7 +26,9 @@ func main() {
 	}
 
 	window := nucular.NewMasterWindow(0, app.name, app.render)
-	window.SetStyle(style.FromTheme(style.DefaultTheme, scaling))
+	if err := setStyle(window); err != nil {
+		log.Fatal(err)
+	}
 	window.Main()
 }
 
