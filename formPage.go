@@ -1,98 +1,83 @@
 package main
 
-import "github.com/aarzilli/nucular"
+import (
+	"strconv"
+	"strings"
 
-func (h *Handler) formBeforeRender() {
+	"github.com/aarzilli/nucular"
+	bip39 "github.com/tyler-smith/go-bip39"
+)
 
+type RenderHandler struct {
+	words     []string
+	err       error
+	verifyErr string
+
+	wordInputs []nucular.TextEditor
+
+	passphraseInput nucular.TextEditor
+	seed            string
+	currentPage     *string
 }
 
-func (h *Handler) formHandler(window *nucular.Window) {
-	window.Row(30).Ratio(0.4, 0.6)
-	window.Label("BIP39 Mnenomic: ", "LC")
-	/**h.mnemonicSeedInput.Edit(window)
+func (h *RenderHandler) beforeRender(currentPage *string) {
+	h.passphraseInput.Flags = nucular.EditSimple
+	h.passphraseInput.PasswordChar = '*'
 
-	window.Row(30).Ratio(0.4, 0.6)
-	window.Label("BIP39 Passphrase (Optional): ", "LC")
-	h.passInput.Edit(window)
+	h.currentPage = currentPage
 
-	window.Row(30).Ratio(0.4, 0.6)
-	window.Label("", "LC")
-	if window.Button(label.T("Generate"), false) {
-		h.generate()
-	}
-
-	if h.dcrSeed != "" {
-		window.Row(20).Dynamic(1)
-		window.Label("", "LC")
-
-		window.Row(30).Ratio(0.4, 0.6)
-		window.Label("BIP39 Seed:", "LC")
-
-		window.Row(100).Dynamic(2)
-		window.LabelWrap(h.dcrSeed)
-	}**/
-}
-
-/**
-
-func (h *Handler) Render(window *nucular.Window) {
-	window.Row(30).Ratio(0.4, 0.6)
-	window.Label("BIP39 Mnenomic: ", "LC")
-	h.mnemonicSeedInput.Edit(window)
-
-	window.Row(30).Ratio(0.4, 0.6)
-	window.Label("BIP39 Passphrase (Optional): ", "LC")
-	h.passInput.Edit(window)
-
-	window.Row(30).Ratio(0.4, 0.6)
-	window.Label("", "LC")
-	if window.Button(label.T("Generate"), false) {
-		h.generate()
-	}
-
-	if h.dcrSeed != "" {
-		window.Row(20).Dynamic(1)
-		window.Label("", "LC")
-
-		window.Row(30).Ratio(0.4, 0.6)
-		window.Label("BIP39 Seed:", "LC")
-
-		window.Row(100).Dynamic(2)
-		window.LabelWrap(h.dcrSeed)
-	}
-}
-
-func (h *Handler) generate() {
-	mnemonicSeed := string(h.mnemonicSeedInput.Buffer)
-	password := string(h.passInput.Buffer)
-
-	bts, err := bip39.NewSeedWithErrorChecking(mnemonicSeed, password)
+	// get bip39 mnemonic words
+	entropy, err := bip39.NewEntropy(256)
 	if err != nil {
-		h.displayError(err)
+		h.err = err
 		return
 	}
 
-	defer func() {
-		for i := range bts {
-			bts[i] = 0
-		}
-	}()
-
-	h.dcrSeed = hex.EncodeToString(bts)
-	h.masterWindow.Changed()
-}
-
-func (h *Handler) displayError(err error) {
-	popup := func(window *nucular.Window) {
-		window.Row(25).Dynamic(1)
-		window.Label(err.Error(), "LC")
-
-		window.Row(25).Dynamic(3)
-		if window.Button(label.T("Close"), false) {
-			window.Close()
-		}
+	words, err := bip39.NewMnemonic(entropy)
+	if err != nil {
+		h.err = err
+		return
 	}
 
-	h.masterWindow.PopupOpen("Error", nucular.WindowTitle, h.errorPopupBounds, false, popup)
+	h.words = strings.Split(words, " ")
+	h.wordInputs = make([]nucular.TextEditor, len(h.words))
+	for index := range h.words {
+		editor := nucular.TextEditor{}
+		editor.Flags = nucular.EditSimple
+		h.wordInputs[index] = editor
+	}
 }
-**/
+
+func (h *RenderHandler) renderHome(window *nucular.Window) {
+	if h.err != nil {
+		window.Row(20).Dynamic(1)
+		window.Label(h.err.Error(), "LC")
+	}
+
+	window.Row(140).Ratio(0.2, 0.8)
+	if group := window.GroupBegin("", 0); group != nil {
+		group.Row(20).Dynamic(1)
+		group.Label("Mnemonic Words:", "LC")
+		group.GroupEnd()
+	}
+
+	if group := window.GroupBegin("", 0); group != nil {
+		group.Row(20).Dynamic(5)
+		for index, value := range h.words {
+			word := strconv.Itoa(index+1) + ". " + value
+			group.Label(word, "LC")
+		}
+		group.GroupEnd()
+	}
+
+	window.Row(30).Ratio(0.2, 0.8)
+	window.Label("Passphrase (Optional): ", "LC")
+	h.passphraseInput.Edit(window)
+
+	window.Row(30).Ratio(0.3, 0.7)
+	window.Label("", "LC")
+	if window.ButtonText("Next") {
+		*h.currentPage = "verify"
+		window.Master().Changed()
+	}
+}
