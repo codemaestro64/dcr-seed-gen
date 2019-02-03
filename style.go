@@ -15,15 +15,19 @@ import (
 var (
 	lightFont font.Face
 	boldFont  font.Face
+
+	buttonTextColor = color.RGBA{70, 127, 207, 255}
+	whiteColor      = color.RGBA{255, 255, 255, 255}
+	inputTextColor  = color.RGBA{73, 80, 87, 255}
 )
 
 var colorTable = nstyle.ColorTable{
-	ColorText:                  color.RGBA{255, 255, 255, 255},
+	ColorText:                  whiteColor,
 	ColorWindow:                color.RGBA{9, 20, 64, 255},
 	ColorHeader:                color.RGBA{175, 175, 175, 255},
 	ColorBorder:                color.RGBA{0, 0, 0, 255},
-	ColorButton:                color.RGBA{9, 20, 64, 255},
-	ColorButtonHover:           color.RGBA{255, 255, 255, 255},
+	ColorButton:                buttonTextColor,
+	ColorButtonHover:           whiteColor,
 	ColorButtonActive:          color.RGBA{0, 153, 204, 255},
 	ColorToggle:                color.RGBA{150, 150, 150, 255},
 	ColorToggleHover:           color.RGBA{120, 120, 120, 255},
@@ -90,7 +94,6 @@ func getFont(fontSize, DPI int, fontData []byte) (font.Face, error) {
 
 func SetFont(window *nucular.Window, font font.Face) {
 	masterWindow := window.Master()
-
 	style := masterWindow.Style()
 	style.Font = font
 	masterWindow.SetStyle(style)
@@ -104,6 +107,17 @@ func setStyle(window nucular.MasterWindow) error {
 
 	style := nstyle.FromTable(colorTable, scaling)
 	style.Font = lightFont
+
+	// buttons
+	style.Button.Rounding = 0
+
+	// text input
+	style.Edit.Normal.Data.Color = whiteColor
+	style.Edit.Hover.Data.Color = whiteColor
+	style.Edit.Active.Data.Color = whiteColor
+	style.Edit.TextActive = inputTextColor
+	style.Edit.CursorHover = inputTextColor
+
 	window.SetStyle(style)
 
 	return nil
