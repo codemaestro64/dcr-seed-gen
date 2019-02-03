@@ -110,12 +110,15 @@ func setStyle(window nucular.MasterWindow) error {
 
 	// buttons
 	style.Button.Rounding = 0
+	style.Button.TextHover = inputTextColor
 
 	// text input
 	style.Edit.Normal.Data.Color = whiteColor
 	style.Edit.Hover.Data.Color = whiteColor
 	style.Edit.Active.Data.Color = whiteColor
 	style.Edit.TextActive = inputTextColor
+	style.Edit.TextNormal = inputTextColor
+	style.Edit.TextHover = inputTextColor
 	style.Edit.CursorHover = inputTextColor
 
 	window.SetStyle(style)

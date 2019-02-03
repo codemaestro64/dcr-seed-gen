@@ -10,13 +10,14 @@ import (
 	bip39 "github.com/tyler-smith/go-bip39"
 )
 
-type RenderHandler struct {
-	columns     [][]string
-	err         error
-	generateErr error
-	verifyErr   string
+type column struct {
+	words  []string
+	inputs []nucular.TextEditor
+}
 
-	wordInputs [][]nucular.TextEditor
+type RenderHandler struct {
+	columns []column
+	err     error
 
 	passphraseInput nucular.TextEditor
 	seed            string
@@ -27,7 +28,6 @@ const (
 	entropyBitSize   = 256 // will produce 24 words
 	entropyNoOfWords = 24
 	columns          = 5
-	rows             = 5
 )
 
 func (h *RenderHandler) beforeRender(currentPage *string) {
@@ -53,28 +53,24 @@ func (h *RenderHandler) beforeRender(currentPage *string) {
 	h.generateSeed(words)
 
 	wordSlice := strings.Split(words, " ")
-	h.columns = make([][]string, 5)
-	h.wordInputs = [][]nucular.TextEditor{}
-
+	h.columns = make([]column, 5)
 	currentColumnIndex := 0
+
 	for index, word := range wordSlice {
-		h.columns[currentColumnIndex] = append(h.columns[currentColumnIndex], word)
-		editor := nucular.TextEditor{
-			Flags: nucular.EditSimple,
-		}
-		h.wordInputs[currentColumnIndex] = append(h.wordInputs[currentColumnIndex], editor)
+		editor := nucular.TextEditor{}
+		h.columns[currentColumnIndex].inputs = append(h.columns[currentColumnIndex].inputs, editor)
+		h.columns[currentColumnIndex].words = append(h.columns[currentColumnIndex].words, word)
 
 		if index > 0 && (index+1)%5 == 0 {
 			currentColumnIndex++
 		}
 	}
-
 }
 
 func (handler *RenderHandler) generateSeed(words string) {
 	bts, err := bip39.NewSeedWithErrorChecking(words, string(handler.passphraseInput.Buffer))
 	if err != nil {
-		handler.generateErr = err
+		handler.err = err
 		return
 	}
 	handler.seed = hex.EncodeToString(bts)
@@ -95,14 +91,14 @@ func (h *RenderHandler) renderHome(window *nucular.Window) {
 
 	if group := window.GroupBegin("", 0); group != nil {
 		group.Row(120).Dynamic(5)
-		num := 1
-		for _, column := range h.columns {
-			if subgroup := group.GroupBegin(column[0], 0); subgroup != nil {
+
+		currentItem := 1
+		for index, column := range h.columns {
+			if subgroup := group.GroupBegin(strconv.Itoa(index), 0); subgroup != nil {
 				subgroup.Row(20).Dynamic(1)
-				for _, word := range column {
-					word := strconv.Itoa(num) + ". " + word
-					num++
-					subgroup.Label(word, "RC")
+				for _, word := range column.words {
+					subgroup.Label(strconv.Itoa(currentItem)+". "+word, "LC")
+					currentItem++
 				}
 				subgroup.GroupEnd()
 			}
@@ -126,8 +122,8 @@ func (h *RenderHandler) renderHome(window *nucular.Window) {
 	}
 
 	window.Row(30).Dynamic(1)
-	if h.generateErr != nil {
-		window.Label(fmt.Sprintf("error generating seed: %s", h.generateErr.Error()), "LC")
+	if h.err != nil {
+		window.Label(fmt.Sprintf("error generating seed: %s", h.err.Error()), "LC")
 	} else {
 		window.Label("Hex Seed", "LC")
 		window.Row(70).Dynamic(1)
