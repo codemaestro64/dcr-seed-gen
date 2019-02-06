@@ -7,21 +7,20 @@ import (
 	"github.com/aarzilli/nucular"
 )
 
-type s struct {
-	add nucular.TextEditor
-}
-
 func (handler *RenderHandler) renderVerify(window *nucular.Window) {
 	window.Row(20).Dynamic(1)
+	SetFont(window, boldFont)
 	window.Label("Verify: ", "LC")
 
+	SetFont(window, normalFont)
 	window.Row(165).Dynamic(1)
 	if group := window.GroupBegin("", 0); group != nil {
 		group.Row(150).Dynamic(5)
-		//currentItem := 0
-		for _, i := range handler.inputs {
-			i.Edit(group)
+		currentItem := 0
+		for index := range handler.columns {
+			newInputColumn(group, handler.columns[index].inputs, &currentItem)
 		}
+
 		group.GroupEnd()
 	}
 
@@ -39,7 +38,8 @@ func (handler *RenderHandler) renderVerify(window *nucular.Window) {
 		window.LabelColored(handler.verifyMessage.message, "LC", color)
 	}
 
-	window.Row(40).Dynamic(4)
+	window.Row(40).Ratio(0.5, 0.25, 0.25)
+	window.Label("", "LC")
 	if window.ButtonText("Verify") {
 		msg := &verifyMessage{}
 		if handler.doVerify(window) {
@@ -59,10 +59,11 @@ func (handler *RenderHandler) renderVerify(window *nucular.Window) {
 
 func newInputColumn(window *nucular.Window, inputs []nucular.TextEditor, currentItem *int) {
 	if group := window.GroupBegin(strconv.Itoa(*currentItem), 0); group != nil {
-		for _, input := range inputs {
+		for index := range inputs {
 			group.Row(25).Ratio(0.2, 0.8)
 			group.Label(strconv.Itoa(*currentItem+1)+". ", "LC")
-			input.Edit(group)
+			inputs[index].Edit(group)
+
 			*currentItem++
 		}
 		group.GroupEnd()
@@ -70,55 +71,14 @@ func newInputColumn(window *nucular.Window, inputs []nucular.TextEditor, current
 }
 
 func (handler *RenderHandler) doVerify(window *nucular.Window) bool {
-	for index, word := range handler.wordSlice {
-		if string(handler.inputs[index].Buffer) != word {
-			return false
-		}
-	}
-	return true
-}
-
-/**
-func (handler *RenderHandler) renderVerify(window *nucular.Window) {
-	window.Row(20).Dynamic(1)
-	window.Label("Verify: ", "LC")
-
-	window.Row(190).Dynamic(1)
-	if group := window.GroupBegin("", 0); group != nil {
-		group.Row(170).Dynamic(5)
-		currentItem := 1
-		for index, column := range handler.columns {
-			if subgroup := group.GroupBegin(strconv.Itoa(index), 0); subgroup != nil {
-				subgroup.Row(28).Ratio(0.22, 0.78)
-				for inputIndex, word := range column.words {
-					subgroup.Label(strconv.Itoa(currentItem), "RC")
-					column.inputs[inputIndex].Buffer = []rune(word)
-					column.inputs[inputIndex].Edit(subgroup)
-					currentItem++
+	for _ = range handler.columns {
+		for columnIndex := range handler.columns {
+			for itemIndex := range handler.columns[columnIndex].words {
+				if handler.columns[columnIndex].words[itemIndex] != string(handler.columns[columnIndex].inputs[itemIndex].Buffer) {
+					return false
 				}
-				subgroup.GroupEnd()
 			}
 		}
-		group.GroupEnd()
 	}
-
-	window.Row(40).Dynamic(4)
-	if window.ButtonText("Verify") {
-
-	}
-	if window.ButtonText("Back") {
-
-	}
-}
-
-func (handler *RenderHandler) verifyIfValid() bool {
-	/**for index, word := range handler.words {
-		if string(handler.wordInputs[index].Buffer) != word {
-			return false
-		}
-	}
-
 	return true
-
 }
-**/

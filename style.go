@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	lightFont font.Face
-	boldFont  font.Face
+	boldFont   font.Face
+	normalFont font.Face
 
 	buttonTextColor = color.RGBA{70, 127, 207, 255}
 	whiteColor      = color.RGBA{255, 255, 255, 255}
@@ -57,25 +57,17 @@ var colorTable = nstyle.ColorTable{
 }
 
 func loadFonts() error {
-	lightFontData, err := ioutil.ReadFile("fonts/SourceSansPro-Light.ttf")
+	fontData, err := ioutil.ReadFile("fonts/SourceSansPro-Regular.ttf")
 	if err != nil {
 		return err
 	}
 
-	boldFontData, err := ioutil.ReadFile("fonts/SourceSansPro-Regular.ttf")
+	normalFont, err = getFont(13, 72, fontData)
 	if err != nil {
 		return err
 	}
 
-	lightFont, err = getFont(13, 72, lightFontData)
-	if err != nil {
-		return err
-	}
-
-	boldFont, err = getFont(13, 72, boldFontData)
-	if err != nil {
-		return err
-	}
+	boldFont, err = getFont(19, 105, fontData)
 
 	return nil
 }
@@ -110,10 +102,10 @@ func setStyle(window nucular.MasterWindow) error {
 	}
 
 	style := nstyle.FromTable(colorTable, scaling)
-	style.Font = lightFont
+	style.Font = normalFont
 
 	// window
-	style.NormalWindow.Padding = image.Point{20, 0}
+	style.NormalWindow.Padding = image.Point{20, 20}
 
 	// buttons
 	style.Button.Rounding = 0

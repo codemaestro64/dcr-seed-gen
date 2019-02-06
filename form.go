@@ -15,12 +15,15 @@ type verifyMessage struct {
 	messageType string
 }
 
+type wordInputColumn struct {
+	words  []string
+	inputs []nucular.TextEditor
+}
+
 type RenderHandler struct {
-	words        string
-	wordSlice    []string
-	inputs       []nucular.TextEditor
-	inputColumns [][]nucular.TextEditor
-	err          error
+	words   string
+	columns []wordInputColumn
+	err     error
 
 	passphraseInput nucular.TextEditor
 	livePassword    string
@@ -41,19 +44,44 @@ func (h *RenderHandler) beforeRender(currentPage *string) {
 	h.passphraseInput.PasswordChar = '*'
 	h.livePassword = ""
 	h.currentPage = currentPage
+
 	h.generate()
 }
 
 func (h *RenderHandler) generate() {
-	h.words, h.err = h.generateWords()
-	if h.err != nil {
+	// generate mnemonic words
+	words, err := generateWords()
+	if err != nil {
+		h.err = err
 		return
 	}
+	h.words = words
 
-	h.err = h.generateSeed()
+	// generate hex seed
+	err = h.generateSeed()
+	if err != nil {
+		h.err = err
+	}
+
+	h.buildColumns(words)
 }
 
-func (h *RenderHandler) generateWords() (string, error) {
+func (h *RenderHandler) buildColumns(words string) {
+	wordSlice := strings.Split(words, " ")
+	h.columns = make([]wordInputColumn, noColumns)
+
+	currentColumn := 0
+	for index, word := range wordSlice {
+		h.columns[currentColumn].words = append(h.columns[currentColumn].words, word)
+		h.columns[currentColumn].inputs = append(h.columns[currentColumn].inputs, nucular.TextEditor{})
+
+		if index > 0 && (index+1)%5 == 0 {
+			currentColumn++
+		}
+	}
+}
+
+func generateWords() (string, error) {
 	// get bip39 mnemonic words
 	entropy, err := bip39.NewEntropy(entropyBitSize)
 	if err != nil {
@@ -70,23 +98,6 @@ func (h *RenderHandler) generateSeed() error {
 		return err
 	}
 	h.seed = hex.EncodeToString(bts)
-	h.wordSlice = strings.Split(h.words, " ")
-	h.inputs = make([]nucular.TextEditor, 5)
-
-	for _ = range h.inputs {
-		h.inputs = append(h.inputs, nucular.TextEditor{})
-	}
-
-	h.inputColumns = make([][]nucular.TextEditor, noColumns)
-
-	currentItem := 0
-	for index, input := range h.inputs {
-		h.inputColumns[currentItem] = append(h.inputColumns[currentItem], input)
-		if index > 0 && (index+1)%5 == 0 {
-			currentItem++
-		}
-	}
-
 	return nil
 }
 
@@ -97,31 +108,41 @@ func (h *RenderHandler) renderHome(window *nucular.Window) {
 	}
 
 	window.Row(20).Dynamic(1)
+	SetFont(window, boldFont)
 	window.Label("Mnemonic Words:", "LC")
 
-	window.Row(140).Dynamic(1)
+	window.Row(137).Dynamic(1)
 	if group := window.GroupBegin("", 0); group != nil {
-		group.Row(120).Dynamic(5)
+		group.Row(121).Dynamic(5)
 		SetFont(group, boldFont)
 
 		currentItem := 0
-		columns := make([][]string, noColumns)
-		for index, word := range h.wordSlice {
-			columns[currentItem] = append(columns[currentItem], word)
-			if index > 0 && (index+1)%noColumns == 0 {
-				currentItem++
-			}
-		}
-
-		currentItem = 0
-		for _, column := range columns {
-			newWordColumn(group, column, &currentItem)
+		for _, column := range h.columns {
+			newWordColumn(group, column.words, &currentItem)
 		}
 		group.GroupEnd()
 	}
 
+	if h.err != nil {
+		window.Row(30).Dynamic(1)
+		window.Label(fmt.Sprintf("error generating seed: %s", h.err.Error()), "LC")
+	} else {
+		window.Row(1).Dynamic(1)
+		window.Label("", "LC")
+
+		window.Row(20).Dynamic(1)
+		SetFont(window, boldFont)
+		window.Label("Hex Seed", "LC")
+		window.Row(60).Dynamic(1)
+		SetFont(window, normalFont)
+		window.LabelWrap(h.seed)
+	}
+
 	window.Row(30).Dynamic(1)
+	SetFont(window, normalFont)
 	window.Label("Passphrase (Optional): ", "LC")
+
+	SetFont(window, normalFont)
 	h.passphraseInput.Edit(window)
 
 	currentPassword := string(h.passphraseInput.Buffer)
@@ -130,23 +151,12 @@ func (h *RenderHandler) renderHome(window *nucular.Window) {
 		h.livePassword = currentPassword
 	}
 
-	window.Row(30).Dynamic(1)
-	if h.err != nil {
-		window.Label(fmt.Sprintf("error generating seed: %s", h.err.Error()), "LC")
-	} else {
-		window.Label("", "LC")
-		window.Label("Hex Seed", "LC")
-		window.Row(70).Dynamic(1)
-		window.LabelWrap(h.seed)
-	}
-
 	window.Row(40).Ratio(0.5, 0.25, 0.25)
 	window.Label("", "LC")
 
 	if window.ButtonText("Verify") {
 		h.verifyMessage = &verifyMessage{}
 		*h.currentPage = "verify"
-		//h.words.inputs[0].Active = true
 		window.Master().Changed()
 	}
 
@@ -158,6 +168,7 @@ func (h *RenderHandler) renderHome(window *nucular.Window) {
 
 func newWordColumn(window *nucular.Window, words []string, currentItem *int) {
 	if group := window.GroupBegin(words[0], 0); group != nil {
+		SetFont(group, normalFont)
 		for _, word := range words {
 			group.Row(20).Dynamic(1)
 			group.Label(strconv.Itoa(*currentItem+1)+". "+word, "LC")
