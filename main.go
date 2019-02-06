@@ -14,7 +14,7 @@ type App struct {
 }
 
 const (
-	scaling = 1.3
+	scaling = 1.2
 )
 
 func main() {

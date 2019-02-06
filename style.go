@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"image/color"
 	"io/ioutil"
 
@@ -19,6 +20,9 @@ var (
 	buttonTextColor = color.RGBA{70, 127, 207, 255}
 	whiteColor      = color.RGBA{255, 255, 255, 255}
 	inputTextColor  = color.RGBA{73, 80, 87, 255}
+
+	colorDanger  = color.RGBA{215, 58, 73, 255}
+	colorSuccess = color.RGBA{227, 98, 9, 255}
 )
 
 var colorTable = nstyle.ColorTable{
@@ -107,6 +111,9 @@ func setStyle(window nucular.MasterWindow) error {
 
 	style := nstyle.FromTable(colorTable, scaling)
 	style.Font = lightFont
+
+	// window
+	style.NormalWindow.Padding = image.Point{20, 0}
 
 	// buttons
 	style.Button.Rounding = 0
