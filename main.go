@@ -25,7 +25,13 @@ func main() {
 		renderhandler: &RenderHandler{},
 	}
 
-	window := nucular.NewMasterWindow(nucular.WindowContextualReplace|nucular.WindowScalable|nucular.WindowNonmodal, app.name, app.render)
+	// load logo once
+	err := loadLogo()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	window := nucular.NewMasterWindow(nucular.WindowContextualReplace|nucular.WindowNonmodal, app.name, app.render)
 	if err := setStyle(window); err != nil {
 		log.Fatal(err)
 	}
