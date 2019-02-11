@@ -14,7 +14,7 @@ type App struct {
 }
 
 const (
-	scaling = 1.3
+	scaling = 1.1
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 		renderhandler: &RenderHandler{},
 	}
 
-	window := nucular.NewMasterWindow(0, app.name, app.render)
+	window := nucular.NewMasterWindow(nucular.WindowContextualReplace|nucular.WindowScalable|nucular.WindowNonmodal, app.name, app.render)
 	if err := setStyle(window); err != nil {
 		log.Fatal(err)
 	}
