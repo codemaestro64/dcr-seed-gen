@@ -33,14 +33,13 @@ type RenderHandler struct {
 }
 
 const (
-	entropyBitSize = 256 // will produce 24 words
-	noColumns      = 5
-	noRows         = 7
+	seedSize  = 32 // affects number of words // noOfWords = (seedSize+1)
+	noColumns = 5
+	noRows    = 7
 )
 
 func (h *RenderHandler) beforeRender(currentPage *string) {
 	h.currentPage = currentPage
-
 	h.generate()
 }
 
@@ -73,7 +72,7 @@ func (h *RenderHandler) buildColumns() {
 }
 
 func generateWords() (string, string, error) {
-	seed, err := walletseed.GenerateRandomSeed(32)
+	seed, err := walletseed.GenerateRandomSeed(seedSize)
 	if err != nil {
 		return "", "", err
 	}
@@ -87,50 +86,56 @@ func (h *RenderHandler) renderHome(window *nucular.Window) {
 		window.Label(h.err.Error(), "LC")
 	}
 
-	window.Row(20).Dynamic(1)
-	SetFont(window, boldFont)
-	window.Label("Mnemonic Words:", "LC")
+	drawHeader(window)
 
-	window.Row(187).Dynamic(1)
-	if group := window.GroupBegin("", 0); group != nil {
-		group.Row(166).Dynamic(noColumns)
-		SetFont(group, boldFont)
+	window.Row(380).Dynamic(1)
+	if newWindow := window.GroupBegin("Main Content", 0); newWindow != nil {
+		newWindow.Row(20).Dynamic(1)
+		SetFont(newWindow, boldFont)
+		newWindow.Label("Mnemonic Words:", "LC")
 
-		currentItem := 0
-		for _, column := range h.columns {
-			newWordColumn(group, column.words, &currentItem)
+		newWindow.Row(187).Dynamic(1)
+		if group := newWindow.GroupBegin("", 0); group != nil {
+			group.Row(166).Dynamic(noColumns)
+			SetFont(group, boldFont)
+
+			currentItem := 0
+			for _, column := range h.columns {
+				newWordColumn(group, column.words, &currentItem)
+			}
+			group.GroupEnd()
 		}
-		group.GroupEnd()
-	}
 
-	if h.err != nil {
-		window.Row(30).Dynamic(1)
-		window.Label(fmt.Sprintf("error generating seed: %s", h.err.Error()), "LC")
-	} else {
-		window.Row(1).Dynamic(1)
-		window.Label("", "LC")
+		if h.err != nil {
+			newWindow.Row(30).Dynamic(1)
+			newWindow.Label(fmt.Sprintf("error generating seed: %s", h.err.Error()), "LC")
+		} else {
+			newWindow.Row(1).Dynamic(1)
+			newWindow.Label("", "LC")
 
-		window.Row(20).Dynamic(1)
-		SetFont(window, boldFont)
-		window.Label("Hex Seed", "LC")
-		window.Row(60).Dynamic(1)
-		SetFont(window, normalFont)
-		window.LabelWrap(h.seed)
-	}
+			newWindow.Row(20).Dynamic(1)
+			SetFont(newWindow, boldFont)
+			newWindow.Label("Hex Seed", "LC")
+			newWindow.Row(60).Dynamic(1)
+			SetFont(newWindow, normalFont)
+			newWindow.LabelWrap(h.seed)
+		}
 
-	SetFont(window, normalFont)
-	window.Row(40).Ratio(0.5, 0.25, 0.25)
-	window.Label("", "LC")
+		SetFont(newWindow, normalFont)
+		newWindow.Row(40).Ratio(0.5, 0.25, 0.25)
+		newWindow.Label("", "LC")
 
-	if window.ButtonText("Verify") {
-		h.verifyMessage = &verifyMessage{}
-		*h.currentPage = "verify"
-		window.Master().Changed()
-	}
+		if newWindow.ButtonText("Verify") {
+			h.verifyMessage = &verifyMessage{}
+			*h.currentPage = "verify"
+			newWindow.Master().Changed()
+		}
 
-	if window.ButtonText("Regenerate") {
-		h.generate()
-		window.Master().Changed()
+		if newWindow.ButtonText("Regenerate") {
+			h.generate()
+			newWindow.Master().Changed()
+		}
+		newWindow.GroupEnd()
 	}
 }
 

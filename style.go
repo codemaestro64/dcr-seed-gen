@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
+	"image/png"
 	"io/ioutil"
+	"os"
 
 	"github.com/aarzilli/nucular"
 	nstyle "github.com/aarzilli/nucular/style"
@@ -17,19 +20,26 @@ var (
 	boldFont   font.Face
 	normalFont font.Face
 
-	buttonTextColor = color.RGBA{70, 127, 207, 255}
-	whiteColor      = color.RGBA{255, 255, 255, 255}
-	inputTextColor  = color.RGBA{73, 80, 87, 255}
+	logo *image.RGBA
 
-	colorDanger  = color.RGBA{215, 58, 73, 255}
-	colorSuccess = color.RGBA{227, 98, 9, 255}
+	whiteColor = color.RGBA{255, 255, 255, 255}
+
+	colorDanger     = color.RGBA{215, 58, 73, 255}
+	colorSuccess    = color.RGBA{227, 98, 9, 255}
+	colorPrimary    = color.RGBA{9, 20, 64, 255}
+	colorAccent     = color.RGBA{237, 109, 71, 255}
+	buttonTextColor = colorAccent
+
+	windowPadding      = image.Point{20, 0}
+	groupWindowPadding = image.Point{10, 0}
+	noPadding          = image.Point{0, 0}
 )
 
 var colorTable = nstyle.ColorTable{
 	ColorText:                  whiteColor,
-	ColorWindow:                color.RGBA{9, 20, 64, 255},
+	ColorWindow:                colorPrimary,
 	ColorHeader:                color.RGBA{175, 175, 175, 255},
-	ColorBorder:                color.RGBA{0, 0, 0, 255},
+	ColorBorder:                colorAccent,
 	ColorButton:                buttonTextColor,
 	ColorButtonHover:           whiteColor,
 	ColorButtonActive:          color.RGBA{0, 153, 204, 255},
@@ -57,7 +67,7 @@ var colorTable = nstyle.ColorTable{
 }
 
 func loadFonts() error {
-	fontData, err := ioutil.ReadFile("fonts/SourceSansPro-Regular.ttf")
+	fontData, err := ioutil.ReadFile("assets/font/SourceSansPro-Regular.ttf")
 	if err != nil {
 		return err
 	}
@@ -69,6 +79,19 @@ func loadFonts() error {
 
 	boldFont, err = getFont(19, 105, fontData)
 
+	return nil
+}
+
+func loadLogo() error {
+	logoHandler, err := os.Open("assets/logo.png")
+	if err != nil {
+		return err
+	}
+	defer logoHandler.Close()
+
+	img, _ := png.Decode(logoHandler)
+	logo = image.NewRGBA(img.Bounds())
+	draw.Draw(logo, img.Bounds(), img, image.ZP, draw.Src)
 	return nil
 }
 
@@ -88,6 +111,30 @@ func getFont(fontSize, DPI int, fontData []byte) (font.Face, error) {
 	return truetype.NewFace(ttfont, options), nil
 }
 
+func drawHeader(window *nucular.Window) {
+	window.Row(70).Dynamic(1)
+
+	style := window.Master().Style()
+	style.GroupWindow.FixedBackground.Data.Color = whiteColor
+	style.NormalWindow.Padding = noPadding
+	style.GroupWindow.Padding = noPadding
+	window.Master().SetStyle(style)
+
+	if group := window.GroupBegin("header", 0); window != nil {
+		// style window
+		group.Row(60).Dynamic(1)
+		group.Image(logo)
+		group.GroupEnd()
+	}
+	window.Row(10).Dynamic(1)
+	window.Label("", "LC")
+
+	style = window.Master().Style()
+	style.GroupWindow.FixedBackground.Data.Color = colorTable.ColorWindow
+	style.GroupWindow.Padding = groupWindowPadding
+	window.Master().SetStyle(style)
+}
+
 func SetFont(window *nucular.Window, font font.Face) {
 	masterWindow := window.Master()
 	style := masterWindow.Style()
@@ -105,20 +152,20 @@ func setStyle(window nucular.MasterWindow) error {
 	style.Font = normalFont
 
 	// window
-	style.NormalWindow.Padding = image.Point{20, 20}
+	style.NormalWindow.Padding = windowPadding
 
 	// buttons
 	style.Button.Rounding = 0
-	style.Button.TextHover = inputTextColor
+	style.Button.TextHover = colorAccent
 
 	// text input
 	style.Edit.Normal.Data.Color = whiteColor
 	style.Edit.Hover.Data.Color = whiteColor
 	style.Edit.Active.Data.Color = whiteColor
-	style.Edit.TextActive = inputTextColor
-	style.Edit.TextNormal = inputTextColor
-	style.Edit.TextHover = inputTextColor
-	style.Edit.CursorHover = inputTextColor
+	style.Edit.TextActive = colorAccent
+	style.Edit.TextNormal = colorAccent
+	style.Edit.TextHover = colorAccent
+	style.Edit.CursorHover = colorAccent
 
 	window.SetStyle(style)
 
