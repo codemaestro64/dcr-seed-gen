@@ -13,9 +13,9 @@ func (handler *RenderHandler) renderVerify(window *nucular.Window) {
 	window.Label("Verify: ", "LC")
 
 	SetFont(window, normalFont)
-	window.Row(165).Dynamic(1)
+	window.Row(235).Dynamic(1)
 	if group := window.GroupBegin("", 0); group != nil {
-		group.Row(150).Dynamic(5)
+		group.Row(220).Dynamic(5)
 		currentItem := 0
 		for index := range handler.columns {
 			newInputColumn(group, handler.columns[index].inputs, &currentItem)
